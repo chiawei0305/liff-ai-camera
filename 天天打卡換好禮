@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天天打卡換好禮 你今天緊緻了嗎？</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #fff8e1; }
+    .card { background: white; padding: 30px 20px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-top: 20px;}
+    #photo { width: 100px; height: 100px; border-radius: 50%; margin-bottom: 15px; border: 4px solid #ff9800; display: none; margin: 0 auto; }
+    h2 { margin: 10px 0; color: #e65100; font-size: 22px;}
+    #points { font-size: 80px; color: #ff9800; font-weight: bold; margin: 10px 0; }
+    .btn { padding: 15px 0; border: none; border-radius: 50px; font-size: 18px; width: 100%; cursor: pointer; font-weight: bold; margin-top: 15px; display: block; color: white; }
+    #btnLogin { background-color: #ff9800; }
+    .upload-box { position: relative; overflow: hidden; margin-top: 10px; }
+    .btn-upload { background-color: #333; }
+    .upload-box input[type=file] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+    
+    select { width: 100%; padding: 12px; font-size: 16px; border-radius: 10px; border: 2px solid #ff9800; background: white; margin-bottom: 10px; color: #333; font-weight: bold;}
+    #status { color: #888; font-size: 13px; margin-top: 20px; white-space: pre-wrap; line-height: 1.5; }
+    #preview { max-width: 100%; border-radius: 10px; margin-top: 15px; display: none; border: 3px solid red; } /* 預覽圖加紅框 */
+    #loginArea { display: block; }
+    #memberArea { display: none; }
+    .hint { font-size: 12px; color: #666; background: #eee; padding: 10px; border-radius: 10px; margin-top: 10px; text-align: left;}
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <!-- 🔴 這裡加了 (v3) 標記，確認是否有更新 -->
+    <h2 id="title">活動載入中... (v3)</h2>
+
+    <div id="loginArea">
+        <p>歡迎參加天天打卡活動</p>
+        <button id="btnLogin" class="btn" onclick="liff.login()">LINE 帳號登入</button>
+    </div>
+
+    <div id="memberArea">
+        <img id="photo" src="">
+        <h2 id="name"></h2>
+        <p style="margin:0; color:#888;">目前累積</p>
+        
+        <div id="points">...</div>
+        
+        <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
+        
+        <h3>🎁 選擇打卡活動</h3>
+        
+        <select id="taskSelect" onchange="updatePointsDisplay()">
+            <option value="event">🔥 1-2月限定：益生菌打卡</option>
+            <option value="regular">👶 乖寶寶打卡換購物金</option>
+            <option value="trial">🎁 上線截圖送體驗包</option>
+        </select>
+
+        <div class="hint">
+          <b>💡 規則：</b><br>
+          系統會自動裁切圖片左側，<b>請確保您的打卡文字位於圖片右側</b>。
+        </div>
+        
+        <div class="upload-box">
+          <button class="btn btn-upload" id="btnUpload">上傳截圖</button>
+          <input type="file" accept="image/*" onchange="handleFile(this)">
+        </div>
+        
+        <p style="font-size:12px; color:red;">👇 預覽圖 (必須只剩右半邊) 👇</p>
+        <img id="preview" src="">
+    </div>
+    
+    <p id="status">系統準備中...</p>
+  </div>
+
+  <script>
+    // 🔴 您的 LIFF ID
+    const MY_LIFF_ID = "2008849214-ADiOsYy8";
+    
+    // 🔴 您的 Google 網址
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzbMWlOiiTX4RlDbhHMpfNqm7xzhh6GNAhpy6SM0izVWwdMMkkQJc65GTn6yN7w1qzE/exec";
+
+    let userProfile = null;
+    let currentPointsData = { event: 0, regular: 0, trial: 0, total: 0 };
+
+    window.onload = async function() {
+      const status = document.getElementById('status');
+      try {
+        await liff.init({ liffId: MY_LIFF_ID });
+        status.innerText = "";
+        if (liff.isLoggedIn()) {
+          showMemberData();
+        } else {
+          document.getElementById('title').innerText = "歡迎光臨 (v3)";
+        }
+      } catch (err) { status.innerText = "Error: " + err; }
+    };
+
+    function showMemberData() {
+      document.getElementById('loginArea').style.display = "none";
+      document.getElementById('memberArea').style.display = "block";
+      document.getElementById('title').innerText = "天天打卡換好禮 (v3)";
+      
+      liff.getProfile().then(profile => {
+        userProfile = profile;
+        document.getElementById('name').innerText = profile.displayName;
+        if(profile.pictureUrl) {
+           document.getElementById('photo').src = profile.pictureUrl;
+           document.getElementById('photo').style.display = "block";
+        }
+        refreshPoints();
+      });
+    }
+
+    function refreshPoints() {
+      fetch(GAS_API_URL + "?action=getPoints&userId=" + userProfile.userId)
+        .then(res => res.json())
+        .then(data => {
+            currentPointsData = data;
+            updatePointsDisplay();
+        })
+        .catch(err => { document.getElementById('points').innerText = "0"; });
+    }
+
+    function updatePointsDisplay() {
+        const select = document.getElementById('taskSelect');
+        const display = document.getElementById('points');
+        const type = select.value;
+
+        if (type === 'event') {
+            display.innerText = currentPointsData.event + " 點";
+        } else if (type === 'trial') {
+            display.innerText = currentPointsData.trial + " 點";
+        } else {
+            display.innerText = currentPointsData.regular + " 點";
+        }
+    }
+
+    // 🔥 V3 超強力裁切：切掉左邊 55% 🔥
+    function handleFile(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const preview = document.getElementById('preview');
+        const status = document.getElementById('status');
+        
+        status.innerText = "✂️ 正在裁切左半邊...";
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                const maxWidth = 1000;
+                
+                // 🔴 更激進的切割：切掉左邊 55%，只留右邊 45%
+                const cropStartX = img.width * 0.55; 
+                const cropWidth = img.width * 0.45;
+
+                const scaleSize = maxWidth / cropWidth;
+                
+                canvas.width = maxWidth;
+                canvas.height = img.height * scaleSize;
+                
+                // 執行裁切繪圖
+                ctx.drawImage(img, cropStartX, 0, cropWidth, img.height, 0, 0, canvas.width, canvas.height);
+                
+                preview.src = canvas.toDataURL('image/jpeg', 0.9);
+                preview.style.display = 'block';
+                
+                uploadImage(canvas.toDataURL('image/jpeg', 0.9));
+            }
+        }
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function uploadImage(base64Image) {
+        const status = document.getElementById('status');
+        const btn = document.getElementById('btnUpload');
+        const category = document.getElementById('taskSelect').value;
+        
+        let label = "乖寶寶打卡";
+        if (category == 'event') label = "益生菌限定";
+        if (category == 'trial') label = "上線截圖送體驗包";
+
+        status.innerText = `小幫手正在核對【${label}】...\n請稍後 ⏳`;
+        btn.innerText = "處理中...";
+        
+        fetch(GAS_API_URL, {
+            method: 'POST',
+            mode: 'cors',  
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({
+                image: base64Image,
+                userId: userProfile.userId,
+                displayName: userProfile.displayName,
+                category: category
+            })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === "SUCCESS") {
+                status.innerText = "✅ 核對成功！";
+                let msg = `🎉 成功！\n\n小幫手看到了：${result.items}\n\n`;
+                msg += `獲得 ${result.added} 點`;
+                alert(msg);
+                currentPointsData = result.current;
+                updatePointsDisplay();
+            } else {
+                status.innerText = "❌ 審核失敗";
+                var reason = result.message.replace("NO: ", "").replace("AI_SAYS: ", "");
+                alert("😢 審核未通過：\n\n" + reason);
+            }
+            btn.innerText = "上傳截圖";
+        })
+        .catch(err => {
+            status.innerText = "連線異常";
+            btn.innerText = "重試";
+            alert(err);
+        });
+    }
+  </script>
+</body>
+</html>
