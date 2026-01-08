@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>天天打卡換好禮 你今天緊緻了嗎？</title>
+  <title>天天打卡換好禮 (v4)</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #fff8e1; }
@@ -47,8 +47,8 @@
         <h3>🎁 選擇打卡活動</h3>
         
         <select id="taskSelect" onchange="updatePointsDisplay()">
-            <option value="event">🔥 1-2月限定：益生菌打卡</option>
-            <option value="regular">👶 乖寶寶打卡換購物金</option>
+            <option value="event">🔥 限定活動：益生菌/面膜</option>
+            <option value="regular">👶 乖寶寶日常打卡</option>
             <option value="trial">🎁 上線截圖送體驗包</option>
         </select>
 
@@ -72,7 +72,8 @@
   <script>
     // ==========================================
     // 👇 請確認這兩個變數是您自己的 👇
-    const MY_LIFF_ID = "2008849214-ADiOsYy8";
+    const MY_LIFF_ID = "2008849214-ADiOsYy8"; // 請確認是否正確
+    // 🔴 請注意！如果你剛剛有「新增部署」Google Apps Script，下面這個網址可能要換新的！
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzbMWlOiiTX4RlDbhHMpfNqm7xzhh6GNAhpy6SM0izVWwdMMkkQJc65GTn6yN7w1qzE/exec";
     // ==========================================
 
@@ -87,7 +88,7 @@
         if (liff.isLoggedIn()) {
           showMemberData();
         } else {
-          document.getElementById('title').innerText = "歡迎光臨 (v3)";
+          document.getElementById('title').innerText = "歡迎光臨 (v4)";
         }
       } catch (err) { status.innerText = "Error: " + err; }
     };
@@ -95,7 +96,7 @@
     function showMemberData() {
       document.getElementById('loginArea').style.display = "none";
       document.getElementById('memberArea').style.display = "block";
-      document.getElementById('title').innerText = "天天打卡換好禮 (v3)";
+      document.getElementById('title').innerText = "天天打卡換好禮 (v4)";
       
       liff.getProfile().then(profile => {
         userProfile = profile;
@@ -114,60 +115,3 @@
         .then(data => {
             currentPointsData = data;
             updatePointsDisplay();
-        })
-        .catch(err => { document.getElementById('points').innerText = "0"; });
-    }
-
-    function updatePointsDisplay() {
-        const select = document.getElementById('taskSelect');
-        const display = document.getElementById('points');
-        const type = select.value;
-
-        if (type === 'event') {
-            display.innerText = currentPointsData.event + " 點";
-        } else if (type === 'trial') {
-            display.innerText = currentPointsData.trial + " 點";
-        } else {
-            display.innerText = currentPointsData.regular + " 點";
-        }
-    }
-
-    // 🔥 V3 超強力裁切：切掉左邊 55% 🔥
-    function handleFile(input) {
-      if (input.files && input.files[0]) {
-        const file = input.files[0];
-        const preview = document.getElementById('preview');
-        const status = document.getElementById('status');
-        
-        status.innerText = "✂️ 正在裁切左半邊...";
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = new Image();
-            img.src = e.target.result;
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                
-                const maxWidth = 1000;
-                
-                // 🔴 更激進的切割：切掉左邊 55%，只留右邊 45%
-                const cropStartX = img.width * 0.55; 
-                const cropWidth = img.width * 0.45;
-
-                const scaleSize = maxWidth / cropWidth;
-                
-                canvas.width = maxWidth;
-                canvas.height = img.height * scaleSize;
-                
-                // 執行裁切繪圖
-                ctx.drawImage(img, cropStartX, 0, cropWidth, img.height, 0, 0, canvas.width, canvas.height);
-                
-                preview.src = canvas.toDataURL('image/jpeg', 0.9);
-                preview.style.display = 'block';
-                
-                uploadImage(canvas.toDataURL('image/jpeg', 0.9));
-            }
-        }
-        reader.readAsDataURL(file);
-      }
