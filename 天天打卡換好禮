@@ -28,7 +28,6 @@
 <body>
 
   <div class="card">
-    <!-- 🔴 這裡加了 (v3) 標記，確認是否有更新 -->
     <h2 id="title">活動載入中... (v3)</h2>
 
     <div id="loginArea">
@@ -71,11 +70,11 @@
   </div>
 
   <script>
-    // 🔴 您的 LIFF ID
+    // ==========================================
+    // 👇 請確認這兩個變數是您自己的 👇
     const MY_LIFF_ID = "2008849214-ADiOsYy8";
-    
-    // 🔴 您的 Google 網址
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzbMWlOiiTX4RlDbhHMpfNqm7xzhh6GNAhpy6SM0izVWwdMMkkQJc65GTn6yN7w1qzE/exec";
+    // ==========================================
 
     let userProfile = null;
     let currentPointsData = { event: 0, regular: 0, trial: 0, total: 0 };
@@ -172,54 +171,3 @@
         }
         reader.readAsDataURL(file);
       }
-    }
-
-    function uploadImage(base64Image) {
-        const status = document.getElementById('status');
-        const btn = document.getElementById('btnUpload');
-        const category = document.getElementById('taskSelect').value;
-        
-        let label = "乖寶寶打卡";
-        if (category == 'event') label = "益生菌限定";
-        if (category == 'trial') label = "上線截圖送體驗包";
-
-        status.innerText = `小幫手正在核對【${label}】...\n請稍後 ⏳`;
-        btn.innerText = "處理中...";
-        
-        fetch(GAS_API_URL, {
-            method: 'POST',
-            mode: 'cors',  
-            redirect: 'follow',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({
-                image: base64Image,
-                userId: userProfile.userId,
-                displayName: userProfile.displayName,
-                category: category
-            })
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.status === "SUCCESS") {
-                status.innerText = "✅ 核對成功！";
-                let msg = `🎉 成功！\n\n小幫手看到了：${result.items}\n\n`;
-                msg += `獲得 ${result.added} 點`;
-                alert(msg);
-                currentPointsData = result.current;
-                updatePointsDisplay();
-            } else {
-                status.innerText = "❌ 審核失敗";
-                var reason = result.message.replace("NO: ", "").replace("AI_SAYS: ", "");
-                alert("😢 審核未通過：\n\n" + reason);
-            }
-            btn.innerText = "上傳截圖";
-        })
-        .catch(err => {
-            status.innerText = "連線異常";
-            btn.innerText = "重試";
-            alert(err);
-        });
-    }
-  </script>
-</body>
-</html>
